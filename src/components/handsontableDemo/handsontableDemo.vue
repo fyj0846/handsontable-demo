@@ -13,6 +13,7 @@
 
 <script>
   import HotTable from '@handsontable/vue';
+  import hotFormulaParser from 'hot-formula-parser'
   import Vue from 'vue';
   import echarts from "../../../static/lib/echarts/echarts.js"
 
@@ -23,10 +24,11 @@
         hotSettings: {
           colHeaders: true,
           rowHeaders: true,
-          formulas: true,
+          // formulas: true,
           dropdownMenu: true,
           contextMenu: true,
           filters: true,
+          PNFormulaPlugin: true,
           data: [["", "个人网银", "手机银行", "短信金融", "微信金融"],
             ["2017", 14, 11, 12, 13],
             ["2018", 13, 23, 12, 15],

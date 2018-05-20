@@ -4,10 +4,29 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <title>handsontable-demo</title>
+    <script src="./static/lib/jquery/jquery.js"></script>
+    <script src="./static/lib/handsontable/handsontable.full.js"></script>
+    <script src="./static/plugins/PNFormulaPlugin.js"></script>
     <link rel="stylesheet" type="text/css" href="./static/lib/handsontable/handsontable.full.css" />
   </head>
   <body>
     <div id="app"></div>
-    <!-- built files will be auto injected -->
+    <div id="example1"></div>
+     <script>
+      var data = [
+        ["", "个人网银", "手机银行", "短信金融", "微信金融", ""],
+        ["2017", 14, 11, 12, 13, '=SUM(B2,C2,D2,E2)'],
+        ["2018", 13, 23, 12, 15, '=SUM(B3,C3,D3,E3)'],
+        ["2019", 11, 45, 10, 21, '=SUM(B4,C4,D4,E4)']
+      ];
+      $('#example1').handsontable({
+        data: data,
+        colHeaders: true,
+        rowHeaders: true,
+        filters: true,
+        PNFormulaPlugin: true,
+        dropdownMenu: ['filter_by_condition', 'filter_action_bar'],
+      });
+    </script>
   </body>
 </html>
