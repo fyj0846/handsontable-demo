@@ -1,3 +1,4 @@
+import Handsontable from 'handsontable'
 function PNFormulaPlugin(hotInstance) {
     Handsontable.plugins.BasePlugin.call(this, hotInstance);
     this._superClass = Handsontable.plugins.BasePlugin;
