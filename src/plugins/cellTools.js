@@ -1,3 +1,5 @@
+const BASE = 'A'.charCodeAt(0) - 1;
+
 export function label2Number(label) {
   var colIndex = 0;
   for (var i = 0; i < label.length; i++) {
@@ -36,9 +38,10 @@ export function number2Label(colNum) {
 
 export function updateColumnLabel(label, amount) {
   const COL_REG = /[A-Z]+/;
-  const BASE = 'A'.charCodeAt(0) - 1;
-  var matches = label.match(COL_REG)
-  var colLabel = matches ? matches[0] : ''
+  const ROW_REG = /\d+/;
+  var colMatches = label.match(COL_REG)
+  var colLabel = colMatches ? colMatches[0] : ''
+  var rowMatches = label.match(ROW_REG)
   var newLabel = number2Label(label2Number(colLabel) + amount)
-  return newLabel;
+  return newLabel+rowMatches[0]
 }

@@ -76,14 +76,14 @@ function PNFormulaPlugin(hotInstance) {
     // todo: 需要优化
     if(j == this.formulaMapper.length) {
       console.log("add mapper [new]: ", change[0] , ":",change[1], "->", result)
-      this.formulaMapper.push({ row: change[0], column: change[1], rawValue: change[3], value: result })
+      this.formulaMapper.push({ row: change[0], column: change[1], rawValue: change[3], value: result, status: 0 })
     } else {
       // 找到历史数据
       if(this.formulaMapper[j].rawValue != change[3] || this.formulaMapper[j].value != result) {
         console.log("remove mapper: ", change[0] , ":",change[1], "->", this.formulaMapper[j].value)
         this.formulaMapper.splice(j, 1);
         console.log("add mapper [update]: ", change[0] , ":",change[1], "->", result)
-        this.formulaMapper.push({ row: change[0], column: change[1], rawValue: change[3], value: result })
+        this.formulaMapper.push({ row: change[0], column: change[1], rawValue: change[3], value: result, status: 0 })
       }
     }
   }
@@ -129,12 +129,12 @@ PNFormulaPlugin.prototype.disablePlugin = function () {
 /**
  * Update the plugin.
  */
-PNFormulaPlugin.prototype.updatePlugin = function () {
-  this.disablePlugin();
-  this.enablePlugin();
-
-  this._superClass.prototype.updatePlugin.call(this);
-};
+// PNFormulaPlugin.prototype.updatePlugin = function () {
+//   this.disablePlugin();
+//   this.enablePlugin();
+//
+//   this._superClass.prototype.updatePlugin.call(this);
+// };
 
 /**
  * The afterChange hook callback.
@@ -175,6 +175,7 @@ PNFormulaPlugin.prototype.onBeforeCreateCol = function(column, amount, source)  
 PNFormulaPlugin.prototype.onAfterCreateCol = function (column, amount, source) {
   console.log("onAfterCreateCol: ", column, amount, source)
   // update mapper
+  var changes = [];
   this.formulaMapper.forEach((item) => {
     if(item.column >= column) {
       item.column += amount;
@@ -183,22 +184,34 @@ PNFormulaPlugin.prototype.onAfterCreateCol = function (column, amount, source) {
         var formula = item.rawValue;
         var cellUnit = [];
         // todo 独立抽象成工具
-        // cellUnit = formula.match(this.CELL_REG)
-        formula.replace(this.CELL_REG, function(match, p1, p2) {
-          console.log(match, p1, p2)
+        var newFormula = formula.replace(this.CELL_REG, function(match, p1, offset) {
+          console.log(match, p1, offset)
+          return updateColumnLabel(match, amount)
         })
+        console.log('update formula: ', formula, "->", newFormula)
+        item.rawValue = newFormula
+        item.value = newFormula
+        item.status = 1 // need update
 
+        changes.push([item.row, item.column, item.rawValue, item.value])
       }
     }
   })
   // update hot table data source
-
+  this.formulaMapper.forEach((item) => {
+    if(item.status != 0) {
+      this.hot.setDataAtCell(item.row, item.column, item.rawValue, source)
+    }
+  })
   // how to trigger update?
+  // this.hot.updateSettings({data: this.hot.getSourceData()}, false)
+  this.hot.render();
 }
 
 PNFormulaPlugin.prototype.onModifyData = function (row, col, valueHolder, ioMode) {
   // 公式检测
   if (ioMode === 'get' && this.isFormulaCell(row, col)) {
+    console.log('onModifyData!')
     valueHolder.value = this.getFormulaCell(row, col);
   }
   // else if (ioMode === 'set' && (0, _utils.isFormulaExpression)(valueHolder.value)) {
@@ -207,6 +220,7 @@ PNFormulaPlugin.prototype.onModifyData = function (row, col, valueHolder, ioMode
 }
 
 PNFormulaPlugin.prototype.afterSetDataAtCell = function (changes, source) {
+  console.log('afterSetDataAtCell!')
   if (!changes || source === 'PNFormulaPlugin') {
     return;
   }
