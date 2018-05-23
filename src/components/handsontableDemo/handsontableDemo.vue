@@ -13,7 +13,7 @@
 
 <script>
   import HotTable from '@handsontable/vue'
-  import '@/plugins/PNFormulaPlugin'
+  import '@/plugins/formula/PNFormulaPlugin'
   import hotFormulaParser from 'hot-formula-parser'
   import Vue from 'vue';
   import echarts from "static/lib/echarts/echarts.js"
