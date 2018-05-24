@@ -1,7 +1,7 @@
 import FormulaMapper from './FormulaMapper'
 import Change from './Change'
 import {FORMULA_CELL_REG, OUT_OF_DATE, UPDATE_TO_DATE} from '../config'
-import {updateColumnLabel} from '../cellTools'
+import {updateColumnLabel} from '../TableCell'
 
 export default class FormulaMapperList {
     constructor () {
@@ -22,13 +22,13 @@ export default class FormulaMapperList {
 
     remove(target) {
         var row = target.row
-        var column = target.getColumn;
+        var column = target.column;
         var index = this.list.findIndex(function(mapper) {
             if(mapper.isEqual(row, column)) {
                 return true
             }
         })
-        if(index) {
+        if(index != undefined) {
             this.list.splice(index, 1)
         }
     }
@@ -75,7 +75,7 @@ export default class FormulaMapperList {
             console.log("add mapper [new]: (", row, ",", column, ") ->", newValue, ' : ', result)
             this.add(new FormulaMapper(row, column, newValue, result))
         }
-        
+
     }
 
     adjustMapperListForColomn(startColumn, amount) {
@@ -87,7 +87,7 @@ export default class FormulaMapperList {
                 if(mapper.isFormula()) {
                     var formula = mapper.rawValue;
                     var newFormula = formula.replace(FORMULA_CELL_REG, function(match, p1, offset) {
-                        return updateColumnLabel(match, amount);
+                        return updateColumnLabel(match, startColumn, amount);
                     })
                 }
                 console.log('update formula: (', mapper.row, '.', mapper.column, ') ', formula, "->", newFormula)

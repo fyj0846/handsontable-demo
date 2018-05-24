@@ -1,5 +1,15 @@
 const BASE = 'A'.charCodeAt(0) - 1;
+const CELL_COLUMN_REG = /[A-Z]+/;
+const CELL_ROW_REG = /\d+/;
 
+export default class TableCell {
+  constructor(row, column, _value, value) {
+    this.row = row;
+    this.column = column;
+    this._value = _value;
+    this.value = value;
+  }
+}
 export function label2Number(label) {
   var colIndex = 0;
   for (var i = 0; i < label.length; i++) {
@@ -36,12 +46,16 @@ export function number2Label(colNum) {
   }
 }
 
-export function updateColumnLabel(label, amount) {
-  const COL_REG = /[A-Z]+/;
-  const ROW_REG = /\d+/;
-  var colMatches = label.match(COL_REG)
+export function updateColumnLabel(label, startColumn, amount) {
+  var colMatches = label.match(CELL_COLUMN_REG)
   var colLabel = colMatches ? colMatches[0] : ''
-  var rowMatches = label.match(ROW_REG)
-  var newLabel = number2Label(label2Number(colLabel) + amount)
-  return newLabel+rowMatches[0]
+  var rowMatches = label.match(CELL_ROW_REG)
+  var rowLabel = rowMatches ? rowMatches[0] : ''
+  var columnIndex = label2Number(colLabel);
+  // 判断公式引用列是否在影响范围内
+  if(columnIndex > startColumn) {
+    return number2Label(columnIndex + amount) + rowLabel
+  } else {
+    return label;
+  }
 }

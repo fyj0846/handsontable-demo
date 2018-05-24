@@ -2,7 +2,7 @@ import Handsontable from 'handsontable'
 import {Parser} from 'hot-formula-parser'
 import FormulaMapper from './FormulaMapper'
 import Change from './Change'
-import {updateColumnLabel} from '../cellTools'
+import {updateColumnLabel} from '../TableCell'
 import {UPDATE_TO_DATE, OUT_OF_DATE} from '../config'
 import FormulaMapperList from './FormulaMapperList';
 
@@ -50,47 +50,6 @@ function PNFormulaPlugin(hotInstance) {
   this.parser = new Parser();
   this.parser.on('callCellValue', this.callCellValue.bind(this));
   this.parser.on('callRangeValue', this.callRangeValue.bind(this));
-
-  // this.isFormulaCell = function (row, column) {
-  //   for (var i = 0; i < this.formulaMapperList.length; i++) {
-  //     var item = this.formulaMapperList[i];
-  //     if(item.isEqual(row, column)) {
-  //       return true;
-  //     }
-  //   }
-  //   return false;
-  // }
-
-  // this.getFormulaCell = function (row, col) {
-  //   for (var i = 0; i < this.formulaMapperList.length; i++) {
-  //     var item = this.formulaMapperList[i];
-  //     if(item.isEqual(row, column)) {
-  //       return item.getValue();
-  //     }
-  //   }
-  //   return null;
-  // }
-
-  // this.updateFormulaMapperList = function (change, result) {
-  //   for (var j = 0; j < this.formulaMapperList.length; j++) {
-  //     if (this.formulaMapperList[j].row == change[0] && this.formulaMapperList[j].column == change[1]) {
-  //       break;
-  //     }
-  //   }
-  //   // todo: 需要优化
-  //   if(j == this.formulaMapperList.length) {
-  //     console.log("add mapper [new]: ", change[0] , ":",change[1], "->", result)
-  //     this.formulaMapperList.push({ row: change[0], column: change[1], rawValue: change[3], value: result, status: 0 })
-  //   } else {
-  //     // 找到历史数据
-  //     if(this.formulaMapperList[j].rawValue != change[3] || this.formulaMapperList[j].value != result) {
-  //       console.log("remove mapper: ", change[0] , ":",change[1], "->", this.formulaMapperList[j].value)
-  //       this.formulaMapperList.splice(j, 1);
-  //       console.log("add mapper [update]: ", change[0] , ":",change[1], "->", result)
-  //       this.formulaMapperList.push({ row: change[0], column: change[1], rawValue: change[3], value: result, status: 0 })
-  //     }
-  //   }
-  // }
 }
 
 PNFormulaPlugin.prototype = Object.create(Handsontable.plugins.BasePlugin.prototype, {
@@ -180,16 +139,13 @@ PNFormulaPlugin.prototype.onAfterCreateCol = function (column, amount, source) {
   var changes = this.formulaMapperList.adjustMapperListForColomn(column, amount)
   // update hot table data source
   this.formulaMapperList.syncOutOfDateMappersToTable(this.hot.setDataAtCell, source)
-  // how to trigger update?
-  // this.hot.updateSettings({data: this.hot.getSourceData()}, false)
-  // this.hot.render();
 }
 
 PNFormulaPlugin.prototype.onModifyData = function (row, col, valueHolder, ioMode) {
   // 公式检测
   if (ioMode === 'get' && this.formulaMapperList.isExist(row, col)) {
-    console.log('onModifyData for formula cell!')
     var mapper = this.formulaMapperList.getMapperByCoord(row, col);
+    console.log('onModifyData for cell: (', row, '.', col, ') ', valueHolder.value, ':', mapper.value)
     valueHolder.value = mapper && mapper.value
   }
   // else if (ioMode === 'set' && (0, _utils.isFormulaExpression)(valueHolder.value)) {
