@@ -2,6 +2,7 @@ import {UPDATE_TO_DATE, FORMULA_PREFIX} from '../config'
 import { stat } from 'fs';
 
 export default class FormulaMapper {
+    // mapper保存物理横纵坐标，即soureData,不受过滤，排序影响，应用场合中需要转换
     constructor (row, column, rawValue, value, status = UPDATE_TO_DATE) {
         this.row = row;
         this.column = column;

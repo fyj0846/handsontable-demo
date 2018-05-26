@@ -2,17 +2,31 @@ import Handsontable from 'handsontable'
 import {Parser} from 'hot-formula-parser'
 import FormulaMapper from './FormulaMapper'
 import Change from './Change'
-import {updateColumnLabel} from '../TableCell'
+import {updateColumnLabel, updateRowLabel} from '../TableCell'
 import {UPDATE_TO_DATE, OUT_OF_DATE} from '../config'
 import FormulaMapperList from './FormulaMapperList';
 
+/**
+ * handsontable中包含两种坐标：
+ *  物理坐标（physical），初始化时决定，不受过滤，排序影响，仅在handsontable增删行列时同步发生变动，对应getData()
+ *  可视坐标（visual），初始化时同物理坐标，但同时要收过滤、排序影响，对应getSourceData()
+ * 
+ *  本plugin保存的公式相关横纵坐标属性时，统一使用物理坐标
+ * 
+ *  在部分钩子函数中，需要分析其使用何种坐标体系，如果接口中使用的是可视坐标，则需要转换为物理坐标
+ * 
+ *  本插件支持：
+ *  0、用户手动书写公式，公式范围参考formula-parse
+ *  1、列的插入、删除时公式同步变更
+ *  2、进行列排序时，公式同步变更(限制：公式中引用的单元格限定于同一行其他单元格)
+ */
 function PNFormulaPlugin(hotInstance) {
   Handsontable.plugins.BasePlugin.call(this, hotInstance);
   this._superClass = Handsontable.plugins.BasePlugin;
   // 公式选择正则
   this.CELL_REG = /\s*(\$?[A-Z]+\$?\d+)\s*/g;
   this.PURE_CELL_REG = /\$?[A-Z]+\$?\d+/g;
-  // 功能：从handsontable data source中取单个单元格数据
+  // 功能：从handsontable data （visual）中取单个单元格数据
   this.callCellValue = function(coord, done) {
     var row = coord.row.index; //coord.row.isAbsolute
     var col = coord.column.index; //coord.column.isAbsolute
@@ -20,7 +34,7 @@ function PNFormulaPlugin(hotInstance) {
     done(result)
   }
 
-  // 功能：从handsontable data source中取范围单元格数据
+  // 功能：从handsontable data（visual）中取范围单元格数据
   this.callRangeValue = function(coordStart, coordEnd, done) {
     var row1 = coordStart.row.index; //coord.row.isAbsolute
     var col1 = coordStart.column.index; //coord.column.isAbsolute
@@ -42,11 +56,11 @@ function PNFormulaPlugin(hotInstance) {
   }
 
   /**
-   * Array containing the vocabulary used in the plugin.
+   * Array containing the mapperList used in the plugin.
    *
    * @type {Array}
    */
-  this.formulaMapperList = new FormulaMapperList();  // [{row: x, col: y, rawValue: =A1+B1, value: 37}]
+  this.formulaMapperList = new FormulaMapperList(this);  // 物理坐标[{row: x, col: y, rawValue: =A1+B1, value: 37}]
   this.parser = new Parser();
   this.parser.on('callCellValue', this.callCellValue.bind(this));
   this.parser.on('callRangeValue', this.callRangeValue.bind(this));
@@ -77,6 +91,9 @@ PNFormulaPlugin.prototype.enablePlugin = function () {
   this.addHook('modifyData', this.onModifyData.bind(this));
   this.addHook('beforeCreateCol', this.onBeforeCreateCol.bind(this));
   this.addHook('afterCreateCol', this.onAfterCreateCol.bind(this));
+  this.addHook('afterRemoveCol', this.onAfterRemoveCol.bind(this));
+  this.addHook('beforeColumnSort', this.onBeforeColumnSort.bind(this));
+  this.addHook('afterColumnSort', this.onAfterColumnSort.bind(this));
   this._superClass.prototype.enablePlugin.call(this);
 };
 
@@ -134,6 +151,7 @@ PNFormulaPlugin.prototype.onBeforeCreateCol = function(column, amount, source)  
 }
 
 PNFormulaPlugin.prototype.onAfterCreateCol = function (column, amount, source) {
+  // 传入的是可视坐标
   console.log("onAfterCreateCol: ", column, amount, source)
   // update mapper
   var changes = this.formulaMapperList.adjustMapperListForColomn(column, amount)
@@ -141,11 +159,33 @@ PNFormulaPlugin.prototype.onAfterCreateCol = function (column, amount, source) {
   this.formulaMapperList.syncOutOfDateMappersToTable(this.hot.setDataAtCell, source)
 }
 
+PNFormulaPlugin.prototype.onAfterRemoveCol = function (column, amount) {
+  amount = 0 - amount;
+  console.log("onAfterRemoveCol: ", column, amount)
+  // update mapper
+  var changes = this.formulaMapperList.adjustMapperListForColomn(column, amount)
+  // update hot table data
+  this.formulaMapperList.syncOutOfDateMappersToTable(this.hot.setDataAtCell, '')
+}
+
+PNFormulaPlugin.prototype.onBeforeColumnSort = function (column, order) {
+  // 备份Mapper中cell和可视位置的关系
+  this.formulaMapperList.saveMapperCoorInfo()
+}
+
+PNFormulaPlugin.prototype.onAfterColumnSort = function (column, order) {
+  // 对比调整顺序后cell的位置和原来位置的关系
+  this.formulaMapperList.adjustMapperListForSorting()
+   // update hot table data
+   this.formulaMapperList.syncOutOfDateMappersToTable(this.hot.setDataAtCell, '')
+}
+
 PNFormulaPlugin.prototype.onModifyData = function (row, col, valueHolder, ioMode) {
+  // 传入的是物理坐标
   // 公式检测
   if (ioMode === 'get' && this.formulaMapperList.isExist(row, col)) {
     var mapper = this.formulaMapperList.getMapperByCoord(row, col);
-    console.log('onModifyData for cell: (', row, '.', col, ') ', valueHolder.value, ':', mapper.value)
+    console.log('onModifyData for cell (physical): (', row, '.', col, ') ', valueHolder.value, ':', mapper.value)
     valueHolder.value = mapper && mapper.value
   }
   // else if (ioMode === 'set' && (0, _utils.isFormulaExpression)(valueHolder.value)) {
@@ -154,6 +194,7 @@ PNFormulaPlugin.prototype.onModifyData = function (row, col, valueHolder, ioMode
 }
 
 PNFormulaPlugin.prototype.afterSetDataAtCell = function (changes, source) {
+  // 传入的是可视坐标
   console.log('afterSetDataAtCell!')
   if (!changes || source === 'PNFormulaPlugin') {
     return;
@@ -161,7 +202,11 @@ PNFormulaPlugin.prototype.afterSetDataAtCell = function (changes, source) {
   // [row, col, original, new]
   changes.forEach((item) => {
     // 判断新字段为公式
-    var change = new Change(item[0], item[1], item[2], item[3]);
+    var phyRow = this.hot.toPhysicalRow(item[0])
+    var phyColumn = this.hot.toPhysicalColumn(item[1])
+    var oldValue = item[2]
+    var newValue = item[3]
+    var change = new Change(phyRow, phyColumn, oldValue, newValue);
     if(change.isFormula()) {
       var formula = change.newValue && change.newValue.slice(1);
       const {error, result} = this.parser.parse(formula);

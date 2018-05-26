@@ -59,3 +59,12 @@ export function updateColumnLabel(label, startColumn, amount) {
     return label;
   }
 }
+
+export function updateRowLabel(label, amount) {
+  var colMatches = label.match(CELL_COLUMN_REG)
+  var colLabel = colMatches ? colMatches[0] : ''
+  var rowMatches = label.match(CELL_ROW_REG)
+  var rowLabel = rowMatches ? rowMatches[0] : ''
+  // 仅能支持公式引用单元格在同一行的情况
+  return colLabel + (rowLabel - 0 + amount);
+}
