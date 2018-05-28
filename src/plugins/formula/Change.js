@@ -40,7 +40,7 @@ export default class Change {
     }
 
     isFormula () {
-        if(this.newValue && this.newValue.startsWith(FORMULA_PREFIX)) {
+        if(this.newValue && this.newValue.toString().startsWith(FORMULA_PREFIX)) {
             return true
         } else {
             return false

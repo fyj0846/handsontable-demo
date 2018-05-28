@@ -30,10 +30,11 @@
           contextMenu: true,
           filters: true,
           PNFormulaPlugin: true,
-          data: [["", "个人网银", "手机银行", "短信金融", "微信金融"],
-            ["2017", 14, 11, 12, 13],
-            ["2018", 24, 21, 22, 23],
-            ["2019", 34, 31, 32, 33]],
+          // ["", "个人网银", "手机银行", "短信金融", "微信金融"]
+          data: [
+            ["2017", 24, 11, 12, 13],
+            ["2018", 14, 21, 22, 23],
+            ["2019", 34, 31, 2, 33]],
           columnSorting: true
         },
         tableData: [],
@@ -50,7 +51,7 @@
     },
     mounted: function() {
       console.log("mounted!")
-      this.refreshData()
+      // this.refreshData()
     },
     updated: function() {
       console.log("updated!")

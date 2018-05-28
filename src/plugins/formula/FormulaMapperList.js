@@ -92,7 +92,7 @@ export default class FormulaMapperList {
             var virColumn = this.toVisualColumn(mapper.column)
             if(virColumn >= startColumn) {
                 if(mapper.isFormula()) {
-                    var formula = mapper.rawValue;
+                    var formula = mapper.rawValue.toUpperCase();
                     var newFormula = formula.replace(FORMULA_CELL_REG, function(match, p1, offset) {
                         return updateColumnLabel(match, startColumn, amount);
                     })
@@ -133,7 +133,7 @@ export default class FormulaMapperList {
             var deltaRow = virRowNow - virRowBefore // 变换前后行号的差异
             if(deltaRow != 0) {
                 if(mapper.isFormula()) {
-                    var formula = mapper.rawValue;
+                    var formula = mapper.rawValue.toUpperCase();
                     var newFormula = formula.replace(FORMULA_CELL_REG, function(match, p1, offset) {
                         return updateRowLabel(match, deltaRow);
                     })
@@ -159,7 +159,9 @@ export default class FormulaMapperList {
             console.log("未传入回调函数，请检查")
             return;
         }
-        this.list.forEach((mapper) => {
+        // 避免list受callback影响，此处需深复制list
+        var tempList = $.extend(true, [], this.list)
+        tempList && tempList.forEach((mapper) => {
             if(mapper.status != UPDATE_TO_DATE) {
                 var virRow = this.toVisualRow(mapper.row)
                 var virColumn = this.toVisualColumn(mapper.column)

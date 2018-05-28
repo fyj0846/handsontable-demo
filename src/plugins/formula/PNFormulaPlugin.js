@@ -209,7 +209,7 @@ PNFormulaPlugin.prototype.afterSetDataAtCell = function (changes, source) {
     var change = new Change(phyRow, phyColumn, oldValue, newValue);
     if(change.isFormula()) {
       var formula = change.newValue && change.newValue.slice(1);
-      const {error, result} = this.parser.parse(formula);
+      const {error, result} = this.parser.parse(formula.toUpperCase());
       if(result) {
         this.formulaMapperList.updateMapperByChange(change, result)
       }
